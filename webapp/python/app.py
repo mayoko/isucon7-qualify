@@ -9,6 +9,7 @@ import random
 import string
 import tempfile
 import time
+import requests
 
 
 static_folder = pathlib.Path(__file__).resolve().parent.parent / 'public'
@@ -368,6 +369,8 @@ def post_profile():
     if avatar_name and avatar_data:
         cur.execute("INSERT INTO image (name, data) VALUES (%s, _binary %s)", (avatar_name, avatar_data))
         cur.execute("UPDATE user SET avatar_icon = %s WHERE id = %s", (avatar_name, user_id))
+        file = {'file': avatar_data}
+        requests.post('http://web/upload_image', files=file)
 
     if display_name:
         cur.execute("UPDATE user SET display_name = %s WHERE id = %s", (display_name, user_id))
