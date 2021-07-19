@@ -9,13 +9,16 @@ import random
 import string
 import tempfile
 import time
-import requests
+import logging
+# from PIL import Image
+# import io
 
 
 static_folder = pathlib.Path(__file__).resolve().parent.parent / 'public'
 icons_folder = static_folder / 'icons'
 app = flask.Flask(__name__, static_folder=str(static_folder), static_url_path='')
 app.secret_key = 'tonymoris'
+app.logger.setLevel(logging.INFO)
 avatar_max_size = 1 * 1024 * 1024
 
 if not os.path.exists(str(icons_folder)):
@@ -369,8 +372,12 @@ def post_profile():
     if avatar_name and avatar_data:
         cur.execute("INSERT INTO image (name, data) VALUES (%s, _binary %s)", (avatar_name, avatar_data))
         cur.execute("UPDATE user SET avatar_icon = %s WHERE id = %s", (avatar_name, user_id))
-        file = {'file': avatar_data}
-        requests.post('http://web/upload_image', files=file)
+        # img = Image.open(io.BytesIO(avatar_data))
+        # img.save(icons_folder / avatar_name)
+        with open(icons_folder / avatar_name, 'wb') as f:
+            f.write(avatar_data)
+            # NG: avatar_data.save(f)
+            # flask.request.files['avatar_icon'].save(f)
 
     if display_name:
         cur.execute("UPDATE user SET display_name = %s WHERE id = %s", (display_name, user_id))
