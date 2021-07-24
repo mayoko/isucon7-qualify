@@ -374,9 +374,6 @@ def post_profile():
         cur.execute("UPDATE user SET avatar_icon = %s WHERE id = %s", (avatar_name, user_id))
         img = Image.open(io.BytesIO(avatar_data))
         img.save(icons_folder / avatar_name)
-        # f.write(avatar_data)
-        # NG: avatar_data.save(f)
-        # flask.request.files['avatar_icon'].save(f)
 
     if display_name:
         cur.execute("UPDATE user SET display_name = %s WHERE id = %s", (display_name, user_id))
