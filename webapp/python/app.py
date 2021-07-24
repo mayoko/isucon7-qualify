@@ -10,8 +10,6 @@ import string
 import tempfile
 import time
 import logging
-from PIL import Image
-import io
 
 
 static_folder = pathlib.Path(__file__).resolve().parent.parent / 'public'
@@ -370,39 +368,14 @@ def post_profile():
                 avatar_data = data
 
     if avatar_name and avatar_data:
-        cur.execute("INSERT INTO image (name, data) VALUES (%s, _binary %s)", (avatar_name, avatar_data))
         cur.execute("UPDATE user SET avatar_icon = %s WHERE id = %s", (avatar_name, user_id))
         with open(icons_folder / avatar_name, 'wb') as f:
             f.write(avatar_data)
-        # img = Image.open(io.BytesIO(avatar_data))
-        # img.save(icons_folder / avatar_name)
 
     if display_name:
         cur.execute("UPDATE user SET display_name = %s WHERE id = %s", (display_name, user_id))
 
     return flask.redirect('/', 303)
-
-
-def ext2mime(ext):
-    if ext in ('.jpg', '.jpeg'):
-        return 'image/jpeg'
-    if ext == '.png':
-        return 'image/png'
-    if ext == '.gif':
-        return 'image/gif'
-    return ''
-
-
-@app.route('/icons/<file_name>')
-def get_icon(file_name):
-    cur = dbh().cursor()
-    cur.execute("SELECT * FROM image WHERE name = %s", (file_name,))
-    row = cur.fetchone()
-    ext = os.path.splitext(file_name)[1] if '.' in file_name else ''
-    mime = ext2mime(ext)
-    if row and mime:
-        return flask.Response(row['data'], mimetype=mime)
-    flask.abort(404)
 
 
 if __name__ == "__main__":
