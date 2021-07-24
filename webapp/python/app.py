@@ -372,8 +372,10 @@ def post_profile():
     if avatar_name and avatar_data:
         cur.execute("INSERT INTO image (name, data) VALUES (%s, _binary %s)", (avatar_name, avatar_data))
         cur.execute("UPDATE user SET avatar_icon = %s WHERE id = %s", (avatar_name, user_id))
-        img = Image.open(io.BytesIO(avatar_data))
-        img.save(icons_folder / avatar_name)
+        with open(icons_folder / avatar_name, 'wb') as f:
+            f.write(avatar_data)
+        # img = Image.open(io.BytesIO(avatar_data))
+        # img.save(icons_folder / avatar_name)
 
     if display_name:
         cur.execute("UPDATE user SET display_name = %s WHERE id = %s", (display_name, user_id))

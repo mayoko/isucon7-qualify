@@ -36,8 +36,10 @@ def main():
         avatar_name = row['name']
         avatar_data = row['data']
         print(avatar_name)
-        img = Image.open(io.BytesIO(avatar_data))
-        img.save(icons_folder / avatar_name)
+        with open(icons_folder / avatar_name, 'wb') as f:
+            f.write(avatar_data)
+        # img = Image.open(io.BytesIO(avatar_data))
+        # img.save(icons_folder / avatar_name)
 
 if __name__ == '__main__':
     main()
