@@ -75,6 +75,7 @@ def db_get_user(cur, user_id):
 def db_add_message(cur, channel_id, user_id, content):
     cur.execute("INSERT INTO message (channel_id, user_id, content, created_at) VALUES (%s, %s, %s, NOW())",
                 (channel_id, user_id, content))
+    cur.execute("UPDATE channel SET updated_at = NOW(), message_cnt = message_cnt + 1")
 
 
 def login_required(func):
