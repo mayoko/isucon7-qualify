@@ -216,10 +216,13 @@ def get_message():
     response.reverse()
 
     max_message_id = max(r['id'] for r in rows) if rows else 0
-    cur.execute('INSERT INTO haveread (user_id, channel_id, message_id, updated_at, created_at)'
-                ' VALUES (%s, %s, %s, NOW(), NOW())'
-                ' ON DUPLICATE KEY UPDATE message_id = %s, updated_at = NOW()',
-                (user_id, channel_id, max_message_id, max_message_id))
+    cur.execute("SELECT COUNT(*) as cnt FROM channel WHERE id = %s", (channel_id,))
+    row = cur.fetchone()
+    read_cnt = row['cnt']
+    cur.execute('INSERT INTO haveread (user_id, channel_id, message_id, updated_at, created_at, read_cnt)'
+                ' VALUES (%s, %s, %s, NOW(), NOW(), %s)'
+                ' ON DUPLICATE KEY UPDATE message_id = %s, updated_at = NOW(), read_cnt = %s',
+                (user_id, channel_id, max_message_id, read_cnt, max_message_id, read_cnt))
 
     return flask.jsonify(response)
 
@@ -231,23 +234,18 @@ def fetch_unread():
         flask.abort(403)
 
     cur = dbh().cursor()
-    cur.execute('SELECT id FROM channel')
+    cur.execute('SELECT id, message_cnt FROM channel')
     rows = cur.fetchall()
-    channel_ids = [row['id'] for row in rows]
+    id_to_unread_cnt = {}
+    for row in rows:
+        id_to_unread_cnt[row['id']] = int(row['message_cnt'])
+    
+    cur.execute('SELECT channel_id, read_cnt FROM haveread WHERE user_id = %s', (user_id,))
+    rows = cur.fetchall()
+    for row in rows:
+        id_to_unread_cnt[row['channel_id']] -= int(row['read_cnt'])
 
-    res = []
-    for channel_id in channel_ids:
-        cur.execute('SELECT * FROM haveread WHERE user_id = %s AND channel_id = %s', (user_id, channel_id))
-        row = cur.fetchone()
-        if row:
-            cur.execute('SELECT COUNT(*) as cnt FROM message WHERE channel_id = %s AND %s < id',
-                        (channel_id, row['message_id']))
-        else:
-            cur.execute('SELECT COUNT(*) as cnt FROM message WHERE channel_id = %s', (channel_id,))
-        r = {}
-        r['channel_id'] = channel_id
-        r['unread'] = int(cur.fetchone()['cnt'])
-        res.append(r)
+    res = [{'channel_id': key, 'unread': value} for key, value in id_to_unread_cnt.items()]
     return flask.jsonify(res)
 
 
