@@ -63,6 +63,11 @@ def get_initialize():
     cur.execute("DELETE FROM channel WHERE id > 10")
     cur.execute("DELETE FROM message WHERE id > 10000")
     cur.execute("DELETE FROM haveread")
+    # update message_cnt for each channel
+    cur.execute("SELECT id FROM channel ORDER BY id")
+    channels = cur.fetchall()
+    for c in channels:
+        cur.execute('UPDATE channel SET message_cnt = (SELECT COUNT(*) FROM message WHERE channel_id = %s) WHERE id = %s', (c['id'], c['id']))
     cur.close()
     return ('', 204)
 
@@ -75,7 +80,7 @@ def db_get_user(cur, user_id):
 def db_add_message(cur, channel_id, user_id, content):
     cur.execute("INSERT INTO message (channel_id, user_id, content, created_at) VALUES (%s, %s, %s, NOW())",
                 (channel_id, user_id, content))
-    cur.execute("UPDATE channel SET updated_at = NOW(), message_cnt = message_cnt + 1")
+    cur.execute("UPDATE channel SET updated_at = NOW(), message_cnt = message_cnt + 1 WHERE id = %s", (channel_id,))
 
 
 def login_required(func):
@@ -216,7 +221,7 @@ def get_message():
     response.reverse()
 
     max_message_id = max(r['id'] for r in rows) if rows else 0
-    cur.execute("SELECT COUNT(*) as cnt FROM channel WHERE id = %s", (channel_id,))
+    cur.execute("SELECT message_cnt as cnt FROM channel WHERE id = %s", (channel_id,))
     row = cur.fetchone()
     read_cnt = row['cnt']
     cur.execute('INSERT INTO haveread (user_id, channel_id, message_id, updated_at, created_at, read_cnt)'
